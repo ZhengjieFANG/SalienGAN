@@ -216,7 +216,7 @@ class SalienGAN(object):
 
                     content_loss = get_content_loss(self.vgg, picture, generated)
                     color_loss = get_color_loss(picture, generated, device)
-                    texture_loss = 0.33*get_texture_loss_insaliency(self.vgg, cartoon_gray, generated, cartoon_saliency) + \
+                    texture_loss = 0.33*get_texture_loss_guided(self.vgg, cartoon_gray, generated, cartoon_saliency, picture_saliency) + \
                         0.67*get_texture_loss(self.vgg, cartoon_gray, generated)
                     t_loss = self.content_weight * content_loss + self.texture_weight * texture_loss+self.shading_weight*color_loss
                     

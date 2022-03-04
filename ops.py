@@ -124,7 +124,7 @@ def gram_matrix_guided(x, guides):
             F = (x[b,:,:,:] * guides[b,c,:,:]).reshape(n_fm,-1) # n_fm * (h_fm * w_fm)
             G[b,c,:,:] = torch.mm(F,F.t()) / float(x.numel()//batch)
 
-    return G  #[batch, n_guide, n_fm,n_fm]
+    return G  #[batch, n_guide, n_fm, n_fm]
 
 
 def get_content_loss(vgg, picture, fake):
@@ -143,9 +143,11 @@ def style_loss_guided(style, fake, sal_cartoon, sal_fake):
     n_guide = sal_cartoon.size()[1]
     loss = torch.Tensor([0.0]).float().cuda()
     for i in range(n_guide):
-        loss += L1_loss(gram_matrix_guided(style,sal_cartoon)[i,:,:], gram_matrix_guided(fake,sal_fake)[i,:,:])
+        loss += L1_loss(gram_matrix_guided(style,sal_cartoon)[:,i,:,:], gram_matrix_guided(fake,sal_fake)[:,i,:,:])
     return loss
 
+def style_loss_insaliency(style, fake, sal_cartoon):
+    return L1_loss(gram_matrix_guided(style,sal_cartoon)[:,1,:,:], gram_matrix(fake))
 
 def get_texture_loss(vgg, cartoon_gray, fake):
     cartoon_feature_map = vgg(cartoon_gray)
@@ -166,6 +168,15 @@ def get_texture_loss_guided(vgg, cartoon_gray, fake, cartoon_saliency, fake_sali
     texture_loss = style_loss_guided(cartoon_feature_map, fake_feature_map, cartoon_saliency_fm, fake_saliency_fm)
     return texture_loss
 
+def get_texture_loss_insaliency(vgg, cartoon_gray, fake, cartoon_saliency): #sliency中包含了显著和不显著两个通道的信息，都是[0,1]
+    cartoon_feature_map = vgg(cartoon_gray)
+    fake_feature_map = vgg(fake)
+    cartoon_fm_size = cartoon_feature_map.size()[-2:]
+    fake_fm_size = fake_feature_map.size()[-2:]
+    cartoon_saliency_fm = get_fm_saliency(cartoon_saliency, cartoon_fm_size, caffe_model=vgg, mode=['simple','simple'], th=.4)
+
+    texture_loss = style_loss_insaliency(cartoon_feature_map, fake_feature_map, cartoon_saliency_fm)
+    return texture_loss
 
 def get_color_loss(picture, fake, device):
     picture = rgb2yuv(picture, device)

@@ -243,7 +243,7 @@ class SalienGAN(object):
                 with torch.no_grad():
                     # Save the checkpoints.
                     self.save_checkpoint(epoch)
-                    
+
             if (epoch + 1) >= self.init_epoch:
                 with torch.no_grad():
                     self.generator.eval()  # 开启验证模式，会停止使用dropout, batch_norme等操作

@@ -195,7 +195,7 @@ class Generator(nn.Module):
         # )
 
         self.block_a_2 = nn.Sequential(
-            ConvNormLReLU(32, 64, stride=2, padding=(0, 1, 0, 1)),      #64*128×128
+            ConvNormLReLU(34, 64, stride=2, padding=(0, 1, 0, 1)),      #64*128×128
             ConvNormLReLU(64, 64)                                       #64*128×128
         )
 
@@ -206,7 +206,7 @@ class Generator(nn.Module):
 
 
         self.block_b = nn.Sequential(
-            ConvNormLReLU(64, 128, stride=2, padding=(0, 1, 0, 1)),     #128*64×64
+            ConvNormLReLU(66, 128, stride=2, padding=(0, 1, 0, 1)),     #128*64×64
             ConvNormLReLU(128, 128)                                     #128*64×64
         )
 
@@ -216,7 +216,7 @@ class Generator(nn.Module):
         # )
 
         self.block_c = nn.Sequential(
-            ConvNormLReLU(128, 128),
+            ConvNormLReLU(130, 128),
             InvertedResBlock(128, 256, 2),
             InvertedResBlock(256, 256, 2),
             InvertedResBlock(256, 256, 2),

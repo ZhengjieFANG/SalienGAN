@@ -239,16 +239,16 @@ class SalienGAN(object):
                     if j < 1:
                         j = self.training_rate
 
+            if (epoch + 1) >= self.init_epoch and np.mod(epoch + 1, self.save_freq) == 0:
+                with torch.no_grad():
+                    # Save the checkpoints.
+                    self.save_checkpoint(epoch)
+
             if (epoch + 1) >= self.init_epoch:
                 with torch.no_grad():
                     self.generator.eval()  # 开启验证模式，会停止使用dropout, batch_norme等操作
                     self.save_sample(epoch, device)
                     self.generator.train()  # 回到训练模式
-
-            if (epoch + 1) >= self.init_epoch and np.mod(epoch + 1, self.save_freq) == 0:
-                with torch.no_grad():
-                    # Save the checkpoints.
-                    self.save_checkpoint(epoch)
 
     # Python内置的@property装饰器负责把一个方法变成属性调用
 

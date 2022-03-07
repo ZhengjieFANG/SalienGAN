@@ -126,7 +126,6 @@ class InvertedResBlock(nn.Module):
 #             ConvNormLReLU(64, 64)                                       #64*128×128
 #         )
 
-
 #         self.block_b = nn.Sequential(
 #             ConvNormLReLU(64, 128, stride=2, padding=(0, 1, 0, 1)),     #128*64×64
 #             ConvNormLReLU(128, 128)                                     #128*64×64
@@ -157,9 +156,9 @@ class InvertedResBlock(nn.Module):
 #             nn.Tanh()
 #         )
 
+
 #     def forward(self, input, saliency, align_corners=True):
 #         input = torch.cat((input, saliency), 1)
-
 #         out = self.block_a_1(input)
 #         out = self.block_a_2(out)
 #         half_size = out.size()[-2:]

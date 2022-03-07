@@ -92,13 +92,40 @@ def get_gray_dataloader(image_dir, img_size, batch_size):
     return dataloader #返回的是一个dataloader的迭代器
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 #     pil_saliency = Image.open(saliency_path)
 #     # 2. Resize and normalize the images using torchvision.
 #     img = self.transform(pil_img)
 #     saliency_1channel = self.transform_saliency(pil_saliency)
 #     saliency = get_saleincy_2channel(saliency_1channel)
 #     return img, saliency
+    # print(cartoon_gray)
+    # print(cartoon_gray2)
+    # print(cartoon_gray.size())
+    # print(cartoon_gray.size())
+
+    cartoon_loader = get_saliency_dataloader('../../dataset/Hayao/style', '../../dataset/Hayao/saliency', [256, 256], 1)
+    cartoon_gray_loader = get_gray_dataloader('../../dataset/Hayao/style',  [256, 256], 1)
+
+    for i in range(10):
+        cartoon, cartoon_saliency = next(cartoon_loader)
+        cartoon_gray = next(cartoon_gray_loader)
+        cartoon_gray2 = utils.get_generated_gray(cartoon)
 
 
+        cartoon = utils.save_transform(cartoon)
+        cartoon_saliency = utils.save_transform(cartoon_saliency)
+        cartoon_gray = utils.save_transform(cartoon_gray)
+        cartoon_gray2 = utils.save_transform(cartoon_gray2)
+
+        # cartoon = cartoon.convert('RGB')
+        cartoon_saliency = cartoon_saliency.convert('RGB')
+        # cartoon = cartoon.convert('RGB')
+        # cartoon = cartoon.convert('RGB')
+
+        cartoon.save( '../IOtest/cartoon{:03d}.jpg'.format(i))
+        cartoon_saliency.save( '../IOtest/cartoon_saliency{:03d}.jpg'.format(i))
+        cartoon_gray.save( '../IOtest/cartoon_gray{:03d}.jpg'.format(i))
+        cartoon_gray2.save('../IOtest/cartoon_gray_generated{:03d}.jpg'.format(i))
+        print(i)
 

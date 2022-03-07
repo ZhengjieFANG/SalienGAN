@@ -50,6 +50,14 @@ def get_saleincy_2channel(saliency):
     insliency = (saliency-1.)*(-1)
     return torch.cat((saliency, insliency),0)
 
+def get_generated_gray(generated):
+    batch_size, channel, height, width = generated.size()
+    generated_gray = generated.clone()
+    for b in range(batch_size):
+        for c in range(channel):
+            generated_gray[b, c, :, :] = 0.299 * generated[b, 0, :, :] + 0.587 * generated[b, 1, :, :] + 0.114 * generated[b, 2, :, :]
+    return generated_gray
+
 def check_folder(log_dir):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -101,19 +109,71 @@ def initialize_weights(net):
                 m.bias.data.zero_()
 
 if __name__ == '__main__':
-    val_file = '../dataset/val/067.jpg'
-    val_sal_file = '../dataset/val_saliency/067.png'
-    # sample_image, sample_sal = load_test_data(val_file,val_sal_file,[256,256])
-    sample_sal = Image.open(val_sal_file)
-    # sample_sal = np.array(sample_sal)
-    sal_to_tensor = T.Compose([
-        # T.Resize((256, 256)),
+    # val_file = '../dataset/val/067.jpg'
+    # val_sal_file = '../dataset/val_saliency/067.png'
+    # # sample_image, sample_sal = load_test_data(val_file,val_sal_file,[256,256])
+    # sample_sal = Image.open(val_sal_file)
+    # # sample_sal = np.array(sample_sal)
+    # sal_to_tensor = T.Compose([
+    #     # T.Resize((256, 256)),
+    #     T.ToTensor(), #会自动除以255转到[0，1]
+    # ])
+    # sample_sal = sal_to_tensor(sample_sal)
+    # print(sample_sal)
+    # # print(sample_image)
+    # print(sample_sal.size())
+    # # sample_image=torch.squeeze(sample_image)
+    # # test_generated = T.ToPILImage()(sample_image)
+    # # test_generated.save('../dataset/sample1.jpg')
+
+    # a = torch.ones((1, 1, 5, 5)) * 1
+    # b = torch.ones((1, 1, 5, 5)) * 2
+    # c = torch.ones((1, 1, 5, 5)) * 2
+    # g = torch.cat((a, b), 1)
+    # f = torch.cat((g, c), 1)
+    #
+    # a2 = torch.ones((1, 1, 5, 5)) * 1
+    # b2 = torch.ones((1, 1, 5, 5)) * 0.5
+    # c2 = torch.ones((1, 1, 5, 5)) * 0.2
+    # g2 = torch.cat((a2, b2), 1)
+    # f2 = torch.cat((g2, c2), 1)
+    # generated = torch.cat((f, f2), 0)
+    # gray = get_generated_gray(generated)
+    # print(gray)
+
+
+    # val_file1 = '/home/luccc/Cartoonization/dataset/Hayao/style/0.jpg'
+    # image1 = Image.open(val_file1)
+    # to_tensor = T.Compose([
+    #     T.ToTensor(), #会自动除以255转到[0，1]
+    # ])
+    #
+    # t1 = to_tensor(image1)
+    # t2 = t1.clone()
+    # t2[0,:,:] = t1[1,:,:]
+    # t2[1,:,:] = t1[2,:,:]
+    # t2[2,:,:] = t1[0,:,:]
+    # print(t1)
+    # print(t2)
+    # t1 = T.ToPILImage()(t1)
+    # t2 = T.ToPILImage()(t2)
+    # t1.save('/home/luccc/Cartoonization/dataset/Hayao/0.jpg')
+    # t2.save('/home/luccc/Cartoonization/dataset/Hayao/1.jpg')
+
+
+
+    val_file1 = '/home/luccc/Cartoonization/dataset/Hayao/0.jpg'
+    val_file2 = '/home/luccc/Cartoonization/dataset/Hayao/1.jpg'
+    image1 = Image.open(val_file1)
+    image2 = Image.open(val_file2)
+    to_tensor = T.Compose([
+        T.Grayscale(num_output_channels=3),
         T.ToTensor(), #会自动除以255转到[0，1]
     ])
-    sample_sal = sal_to_tensor(sample_sal)
-    print(sample_sal)
-    # print(sample_image)
-    print(sample_sal.size())
-    # sample_image=torch.squeeze(sample_image)
-    # test_generated = T.ToPILImage()(sample_image)
-    # test_generated.save('../dataset/sample1.jpg')
+
+    t1 = to_tensor(image1)
+    t2 = to_tensor(image2)
+    # t1.save('/home/luccc/Cartoonization/dataset/Hayao/0_black.jpg')
+    # t2.save('/home/luccc/Cartoonization/dataset/Hayao/1_black.jpg')
+    print(t1)
+    print(t2)

@@ -1,3 +1,4 @@
+from tkinter.tix import Tree
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -109,10 +110,19 @@ def gram_matrix(x):
     return gram
 
 
+def gram_matrix_no_batch(x):
+    n_fm = x.size()[0]
+    x = x.view(n_fm,-1)
+    x_t = x.transpose(0,1)
+    gram = torch.mm(x, x_t) / x.size()[1]
+    return gram
+
 def gram_matrix_guided(x, guides):
     '''
-    :param x: feature map [b, n_fm, h, w]
-    :param guides: saliency [b, 2, h, w]
+    param x: feature map [b, n_fm, h, w]
+    param guides: saliency [b, 2, h, w]
+    guides should be normalised as: guides = guides / np.sqrt(np.diag(gram_matrix(guides)))[:,None,None]
+    Output :  [b, 2, n_fm, n_fm]
     '''
     assert guides.dtype == torch.float32, 'Guides should be float'
     batch, n_fm, h_fm ,w_fm = x.size()
@@ -125,6 +135,18 @@ def gram_matrix_guided(x, guides):
             G[b,c,:,:] = torch.mm(F,F.t()) / float(x.numel()//batch)
 
     return G  #[batch, n_guide, n_fm, n_fm]
+
+
+def normalise_guides(guides):
+    #guides: saliency[b, 2, h, w]
+    batch = guides.size()[0]
+    n_guide = guides.size()[1]
+    for b in range(batch):
+        guide_diag = torch.sqrt(torch.diag(gram_matrix_no_batch(guides[b, :, :, :])))
+        for i in range(n_guide):
+            if guide_diag[i] !=0 :
+                guides[b, i, :, :] = guides[b, i, :, :] / guide_diag[i] 
+    return guides
 
 
 def get_content_loss(vgg, picture, fake):
@@ -140,14 +162,24 @@ def style_loss(style, fake):
 
 
 def style_loss_guided(style, fake, sal_cartoon, sal_fake):
+    batch = sal_cartoon.size()[0]
     n_guide = sal_cartoon.size()[1]
     loss = torch.Tensor([0.0]).float().cuda()
-    for i in range(n_guide):
-        loss += L1_loss(gram_matrix_guided(style,sal_cartoon)[:,i,:,:], gram_matrix_guided(fake,sal_fake)[:,i,:,:])
-    return loss
+    batch_nonzero = torch.Tensor([0.0]).float().cuda()
+    for b in range(batch):
+        flag = False
+        for i in range(n_guide):
+            if torch.nonzero(sal_cartoon[b,i,:,:]).size()[0]!=0 and torch.nonzero(sal_fake[b,i,:,:]).size()[0]!=0:
+                loss += L1_loss(gram_matrix_guided(style,sal_cartoon)[b,i,:,:], gram_matrix_guided(fake,sal_fake)[b,i,:,:])
+                flag = True
+        if flag == True:
+            batch_nonzero+=1
+    return loss / batch_nonzero
+
 
 def style_loss_insaliency(style, fake, sal_cartoon):
     return L1_loss(gram_matrix_guided(style,sal_cartoon)[:,1,:,:], gram_matrix(fake))
+
 
 def get_texture_loss(vgg, cartoon_gray, fake):
     cartoon_feature_map = vgg(cartoon_gray)
@@ -165,6 +197,10 @@ def get_texture_loss_guided(vgg, cartoon_gray, fake, cartoon_saliency, fake_sali
     cartoon_saliency_fm = get_fm_saliency(cartoon_saliency, cartoon_fm_size, caffe_model=vgg, th=.4)
     fake_saliency_fm = get_fm_saliency(fake_saliency, fake_fm_size, caffe_model=vgg, th=.4)
 
+    # normalise the guides
+    cartoon_saliency_fm = normalise_guides(cartoon_saliency_fm)
+    fake_saliency_fm = normalise_guides(fake_saliency_fm)
+
     texture_loss = style_loss_guided(cartoon_feature_map, fake_feature_map, cartoon_saliency_fm, fake_saliency_fm)
     return texture_loss
 
@@ -173,6 +209,7 @@ def get_texture_loss_insaliency(vgg, cartoon_gray, fake, cartoon_saliency): #sli
     fake_feature_map = vgg(fake)
     cartoon_fm_size = cartoon_feature_map.size()[-2:]
     fake_fm_size = fake_feature_map.size()[-2:]
+
     cartoon_saliency_fm = get_fm_saliency(cartoon_saliency, cartoon_fm_size, caffe_model=vgg, mode=['simple','simple'], th=.4)
 
     texture_loss = style_loss_insaliency(cartoon_feature_map, fake_feature_map, cartoon_saliency_fm)
@@ -249,6 +286,7 @@ def get_fm_saliency(saleincy, out_size, caffe_model=None, mode=['all','inside'],
 
 
 if __name__ == '__main__':
+
     vgg = Vgg19()
     a1 = torch.zeros((1, 1, 128, 256))
     a2 = torch.ones((1, 1, 128, 256))
@@ -264,6 +302,47 @@ if __name__ == '__main__':
 
     print(s_fm)
     print(s_fm.size())
+
+    guides = torch.tensor([[[[1., 1., 1.],
+                        [1., 1., 1.],
+                        [0., 0., 0.]],
+
+                       [[0., 0., 0.],
+                        [0., 0., 0.],
+                        [1., 1., 1.]]]])
+    # print("----guides-----")
+    # print(guides)
+    # print(guides.size())
+    # print("----gram_duide-----")
+    # gram_duide = gram_matrix_no_batch(guides[0,:,:,:])
+    # print(gram_duide)
+    # print(gram_duide.size())
+    # print("----np.sqrt(np.diag(gram_matrix(guides)))-----")
+    # n_duide = torch.sqrt(torch.diag(gram_duide))
+    # print(n_duide)
+    # print(n_duide.size())
+    # print("-----new guides----")
+    # n_duide = torch.unsqueeze(n_duide,-1)
+    # n_duide = torch.unsqueeze(n_duide,-1)
+    # guides[0,:,:,:] = guides[0,:,:,:] / n_duide
+    guides = normalise_guides(guides)
+    print(guides)
+    print(guides.size())
+    # vgg = Vgg19()
+    # a1 = torch.zeros((1, 1, 128, 256))
+    # a2 = torch.ones((1, 1, 128, 256))
+    #
+    # d1 = torch.ones((1,1,128,256))
+    # d2 = torch.zeros((1,1,128,256))
+    #
+    # a = torch.cat((a1,a2),2)
+    # d = torch.cat((d1,d2),2)
+    # s = torch.cat((a,d),1)
+    #
+    # s_fm = get_fm_saliency(s,[32,32],caffe_model=vgg, mode=['all', 'inside'])
+    #
+    # print(s_fm)
+    # print(s_fm.size())
 
     # a1 = torch.rand((2, 3, 256, 256))*256
     # guide = torch.cat((torch.zeros((128,256)),torch.ones((128,256))),0)
@@ -313,3 +392,18 @@ if __name__ == '__main__':
     # #
     # print(s_fm)
     # print(s_fm.size())
+    # a = torch.rand((2, 3, 4, 4))
+    # b = a[:,0,:,:]
+    # c = a[0,:,:]
+    # print(a)
+    # print(b)
+    # print(c)
+    # print(a.size())
+    # print(b.size())
+    # print(c.size())
+    # a = torch.rand((1, 2, 4, 4))
+    # b = torch.rand((1, 2, 4, 4))
+    # l1 = L1_loss(a,b)
+    # l2 = L1_loss(a[:,0,:,:],b[:,0,:,:])+L1_loss(a[:,1,:,:],b[:,1,:,:])
+    # print(l1)
+    # print(l2/2)

@@ -211,6 +211,9 @@ def get_texture_loss_insaliency(vgg, cartoon_gray, fake, cartoon_saliency): #sli
 
     cartoon_saliency_fm = get_fm_saliency(cartoon_saliency, cartoon_fm_size, caffe_model=vgg, mode=['simple','simple'], th=.4)
 
+    # normalise the guides
+    cartoon_saliency_fm = normalise_guides(cartoon_saliency_fm)
+
     texture_loss = style_loss_insaliency(cartoon_feature_map, fake_feature_map, cartoon_saliency_fm)
     return texture_loss
 
@@ -286,21 +289,21 @@ def get_fm_saliency(saleincy, out_size, caffe_model=None, mode=['all','inside'],
 
 if __name__ == '__main__':
 
-    vgg = Vgg19()
-    a1 = torch.zeros((1, 1, 128, 256))
-    a2 = torch.ones((1, 1, 128, 256))
+    # vgg = Vgg19()
+    # a1 = torch.zeros((1, 1, 128, 256))
+    # a2 = torch.ones((1, 1, 128, 256))
 
-    d1 = torch.ones((1,1,128,256))
-    d2 = torch.zeros((1,1,128,256))
+    # d1 = torch.ones((1,1,128,256))
+    # d2 = torch.zeros((1,1,128,256))
 
-    a = torch.cat((a1,a2),2)
-    d = torch.cat((d1,d2),2)
-    s = torch.cat((a,d),1)
+    # a = torch.cat((a1,a2),2)
+    # d = torch.cat((d1,d2),2)
+    # s = torch.cat((a,d),1)
 
-    s_fm = get_fm_saliency(s,[32,32],caffe_model=vgg, mode=['all', 'inside'])
+    # s_fm = get_fm_saliency(s,[32,32],caffe_model=vgg, mode=['all', 'inside'])
 
-    print(s_fm)
-    print(s_fm.size())
+    # print(s_fm)
+    # print(s_fm.size())
 
     guides = torch.tensor([[[[1., 1., 1.],
                         [1., 1., 1.],

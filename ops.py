@@ -1,4 +1,3 @@
-from tkinter.tix import Tree
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -144,7 +143,7 @@ def normalise_guides(guides):
     for b in range(batch):
         guide_diag = torch.sqrt(torch.diag(gram_matrix_no_batch(guides[b, :, :, :])))
         for i in range(n_guide):
-            if guide_diag[i] !=0 :
+            if guide_diag[i] != 0 :
                 guides[b, i, :, :] = guides[b, i, :, :] / guide_diag[i] 
     return guides
 
